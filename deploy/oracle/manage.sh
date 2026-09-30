@@ -10,6 +10,7 @@
 #              create a dietitian login (prints a generated password), or reset
 #              an existing dietitian's password and sign them out everywhere
 #   list       list dietitians and their patient counts
+#   backup     download a consistent copy of the live database to ./backups/
 set -euo pipefail
 
 usage() { awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"; exit 1; }
@@ -46,6 +47,20 @@ case "$CMD" in
     ;;
   list)
     server_cmd server:list
+    ;;
+  backup)
+    # VACUUM INTO writes a consistent snapshot even while the server is running,
+    # unlike copying the .db file mid-write.
+    ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+    OUT="$ROOT/backups/nutriflow-$(date +%Y%m%d-%H%M%S).db"
+    mkdir -p "$ROOT/backups"
+    SNAP=/opt/nutriflow/backup-snapshot.db
+    "${SSH[@]}" "cd /opt/nutriflow/app && sudo -u nutriflow rm -f $SNAP && sudo -u nutriflow node -e \"
+      require('@libsql/client').createClient({ url: 'file:/opt/nutriflow/app/server-data/nutriflow.db' })
+        .execute(\\\"VACUUM INTO '$SNAP'\\\").then(() => process.exit(0), (e) => { console.error(e.message); process.exit(1); });\""
+    "${SSH[@]}" "sudo cat $SNAP && sudo rm -f $SNAP" > "$OUT"
+    echo "✓ Backup saved: $OUT ($(du -h "$OUT" | cut -f1))"
+    echo "  It contains patient data — keep it somewhere private."
     ;;
   *)
     usage

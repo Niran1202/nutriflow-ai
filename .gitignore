@@ -57,3 +57,6 @@ next-env.d.ts
 # desktop app share folder
 /download
 /desktop/app-config.json
+
+# database backups downloaded from the server (contain patient data)
+/backups
