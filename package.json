@@ -17,8 +17,7 @@
     "server:setup": "tsx scripts/server.ts setup",
     "server:dietitian": "tsx scripts/server.ts dietitian",
     "server:list": "tsx scripts/server.ts list",
-    "server:start": "tsx scripts/server.ts start",
-    "server:tunnel": "tsx scripts/server.ts tunnel"
+    "server:start": "tsx scripts/server.ts start"
   },
   "dependencies": {
     "@langchain/core": "^1.2.13",

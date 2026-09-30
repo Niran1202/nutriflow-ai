@@ -1,14 +1,15 @@
 /**
- * NutriFlow live server — owner tools. The live server keeps its data in
- * server-data/ (separate from the local demo database) and is reached by the
- * desktop app over the internet through a Cloudflare tunnel.
+ * NutriFlow live server — owner tools. Runs on the Oracle Cloud VM (see
+ * deploy/oracle/), where the live data lives in server-data/ (separate from the
+ * local demo database). From your PC, deploy/oracle/manage.sh runs these on
+ * the server over SSH.
  *
  *   npm run server:setup                               create / migrate the live database
  *   npm run server:dietitian -- --name "Jothi" --email jothi@example.com [--password "…"]
  *                                                      create a dietitian, or reset their password
  *   npm run server:list                                list dietitians and patient counts
  *   npm run server:start                               build (if needed) and run the server on 127.0.0.1:3000
- *   npm run server:tunnel                              expose it at a public https:// address
+ *                                                      (run by systemd; Caddy serves it over HTTPS)
  */
 import "dotenv/config";
 import { spawn, execSync } from "node:child_process";
@@ -22,8 +23,6 @@ const DATA_DIR = path.join(ROOT, "server-data");
 const DB_FILE = path.join(DATA_DIR, "nutriflow.db");
 const LIVE_DB_URL = `file:${DB_FILE.replace(/\\/g, "/")}`;
 const PORT = Number(process.env.NUTRIFLOW_PORT ?? 3000);
-const TOOLS_DIR = path.join(ROOT, "tools");
-const CLOUDFLARED = path.join(TOOLS_DIR, "cloudflared.exe");
 
 // Everything below talks to the live database, never the demo one.
 process.env.DATABASE_URL = LIVE_DB_URL;
@@ -104,7 +103,7 @@ async function start() {
   copyDir(path.join(ROOT, ".next", "static"), path.join(standalone, ".next", "static"));
   copyDir(path.join(ROOT, "public"), path.join(standalone, "public"));
 
-  console.log(`\n› NutriFlow server on http://127.0.0.1:${PORT}  (Ctrl+C to stop)\n  Run "npm run server:tunnel" in another terminal to make it reachable from anywhere.\n`);
+  console.log(`\n› NutriFlow server on http://127.0.0.1:${PORT}\n`);
   const child = spawn(process.execPath, [path.join(standalone, "server.js")], {
     cwd: standalone,
     stdio: "inherit",
@@ -112,46 +111,17 @@ async function start() {
       ...process.env,
       NODE_ENV: "production",
       PORT: String(PORT),
-      HOSTNAME: "127.0.0.1", // only reachable locally and through the tunnel
+      HOSTNAME: "127.0.0.1", // only reachable through Caddy on the same machine
       DATABASE_URL: LIVE_DB_URL,
     },
   });
   child.on("exit", (code) => process.exit(code ?? 0));
 }
 
-async function ensureCloudflared() {
-  if (fs.existsSync(CLOUDFLARED)) return;
-  fs.mkdirSync(TOOLS_DIR, { recursive: true });
-  console.log("› Downloading cloudflared (Cloudflare Tunnel client)…");
-  const url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe";
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Download failed (${res.status})`);
-  fs.writeFileSync(CLOUDFLARED, Buffer.from(await res.arrayBuffer()));
-}
-
-async function tunnel() {
-  await ensureCloudflared();
-  console.log(`› Opening a public tunnel to http://127.0.0.1:${PORT} …`);
-  const child = spawn(CLOUDFLARED, ["tunnel", "--no-autoupdate", "--url", `http://127.0.0.1:${PORT}`], { stdio: ["ignore", "pipe", "pipe"] });
-  let announced = false;
-  const onData = (buf: Buffer) => {
-    const m = buf.toString().match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
-    if (m && !announced) {
-      announced = true;
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-      fs.writeFileSync(path.join(DATA_DIR, "public-url.txt"), m[0] + "\n");
-      console.log(`\n✓ NutriFlow is reachable at:\n\n    ${m[0]}\n\n  Put this address into the desktop app (File → Server address…) or build it in with\n  "npm run dist -- --server ${m[0]}" in desktop/. Keep this window open.\n`);
-    }
-  };
-  child.stdout.on("data", onData);
-  child.stderr.on("data", onData);
-  child.on("exit", (code) => process.exit(code ?? 0));
-}
-
-const commands: Record<string, () => Promise<void>> = { setup, dietitian, list, start, tunnel };
+const commands: Record<string, () => Promise<void>> = { setup, dietitian, list, start };
 const cmd = process.argv[2];
 if (!cmd || !commands[cmd]) {
-  console.log("Commands: setup | dietitian | list | start | tunnel");
+  console.log("Commands: setup | dietitian | list | start");
   process.exit(1);
 }
 commands[cmd]().catch((err) => {
