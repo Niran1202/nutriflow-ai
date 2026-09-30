@@ -1,0 +1,26 @@
+[Unit]
+Description=NutriFlow AI server
+After=network-online.target ollama.service
+Wants=network-online.target ollama.service
+
+[Service]
+Type=simple
+User=nutriflow
+Group=nutriflow
+WorkingDirectory=/opt/nutriflow/app
+# server.ts start: applies pending migrations, copies static assets, runs the
+# standalone Next.js server on 127.0.0.1:3000 (only Caddy can reach it).
+ExecStart=/opt/nutriflow/app/node_modules/.bin/tsx scripts/server.ts start
+Environment=NODE_ENV=production
+Restart=always
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/nutriflow
+
+[Install]
+WantedBy=multi-user.target

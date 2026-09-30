@@ -1,0 +1,53 @@
+{
+  "name": "nutriflow-desktop",
+  "productName": "NutriFlow AI",
+  "version": "0.1.0",
+  "description": "NutriFlow AI desktop app",
+  "author": "NutriFlow",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "set-server": "node scripts/set-server.js",
+    "dist": "node scripts/set-server.js && electron-builder --win nsis portable && node scripts/collect.js"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "ai.nutriflow.desktop",
+    "productName": "NutriFlow AI",
+    "copyright": "NutriFlow AI",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "connect.html",
+      "icon.png",
+      "app-config.json",
+      "package.json"
+    ],
+    "win": {
+      "icon": "icon.png",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NutriFlow AI",
+      "artifactName": "NutriFlow-AI-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "NutriFlow-AI-Portable-${version}.${ext}"
+    }
+  }
+}

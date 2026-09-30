@@ -1,0 +1,137 @@
+// NutriFlow AI — local SQLite schema.
+// Relationship rule: a patient only exists because a dietitian created them.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String?  @unique // null for patients who have not joined yet
+  passwordHash String?
+  role         String // "DIETITIAN" | "PATIENT"
+  createdAt    DateTime @default(now())
+
+  sessions      Session[]
+  patients      DietitianPatient[] @relation("DietitianPatients")
+  dietitianLink DietitianPatient?  @relation("PatientDietitian")
+  profile       PatientProfile?
+  target        NutritionTarget?
+  meals         Meal[]
+  progress      DailyProgress[]
+  agentEvents   AgentEvent[]
+  alerts        Alert[]
+  chatMessages  ChatMessage[]
+}
+
+model Session {
+  id        String   @id // random token stored in an httpOnly cookie
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DietitianPatient {
+  id             String    @id @default(cuid())
+  dietitianId    String
+  patientId      String    @unique
+  invitationCode String    @unique
+  joinedAt       DateTime?
+  createdAt      DateTime  @default(now())
+
+  dietitian User @relation("DietitianPatients", fields: [dietitianId], references: [id], onDelete: Cascade)
+  patient   User @relation("PatientDietitian", fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model PatientProfile {
+  patientId    String @id
+  goal         String
+  dietType     String
+  preferences  String
+  restrictions String
+  patient      User   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model NutritionTarget {
+  patientId     String   @id
+  calorieTarget Int
+  proteinTarget Int
+  waterTarget   Float // litres
+  updatedAt     DateTime @updatedAt
+  patient       User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model Meal {
+  id        String   @id @default(cuid())
+  patientId String
+  date      String // YYYY-MM-DD (local day)
+  mealType  String // Breakfast | Lunch | Dinner | Snack
+  food      String
+  calories  Float
+  protein   Float
+  carbs     Float
+  fat       Float
+  createdAt DateTime @default(now())
+  patient   User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, date])
+}
+
+model DailyProgress {
+  patientId String
+  date      String
+  calories  Float  @default(0)
+  protein   Float  @default(0)
+  water     Float  @default(0)
+  patient   User   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@id([patientId, date])
+}
+
+model AgentEvent {
+  id        String   @id @default(cuid())
+  patientId String
+  agent     String
+  action    String
+  result    String // JSON
+  timestamp DateTime @default(now())
+  patient   User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, timestamp])
+}
+
+model Alert {
+  id           String    @id @default(cuid())
+  patientId    String
+  type         String // e.g. PROTEIN_LOW, CALORIES_HIGH
+  severity     String // "info" | "warning" | "high"
+  reason       String
+  explanation  String // supervisor-generated narrative
+  evidence     String // JSON
+  status       String    @default("OPEN") // OPEN | REVIEWED
+  decision     String? // KEEP_PLAN | MODIFY_PLAN | MESSAGE_PATIENT
+  decisionNote String?
+  createdAt    DateTime  @default(now())
+  reviewedAt   DateTime?
+  patient      User      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, status])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  patientId String
+  role      String // "patient" | "assistant" | "dietitian"
+  content   String
+  meta      String? // JSON: which agents ran
+  createdAt DateTime @default(now())
+  patient   User     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, createdAt])
+}

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+<title>NutriFlow AI</title>
+<style>
+  :root { --canvas:#f6f5f1; --surface:#fff; --ink:#1c2420; --muted:#5f6b65; --line:#e3e1da; --brand:#2f6f4f; --brand-strong:#245a40; --danger:#b3261e; --danger-soft:#fbe7e5; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body { background: var(--canvas); color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+         display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+  .wrap { width: 100%; max-width: 440px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 18px; margin-bottom: 24px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  p { color: var(--muted); font-size: 14px; line-height: 1.5; margin: 0 0 16px; }
+  label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  input { width: 100%; font: inherit; font-size: 14px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; outline: none; }
+  input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(47,111,79,.15); }
+  .row { display: flex; gap: 8px; margin-top: 16px; }
+  button { font: inherit; font-size: 14px; font-weight: 500; border-radius: 8px; padding: 9px 16px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  button.primary:hover { background: var(--brand-strong); }
+  .error { display: none; margin-top: 12px; background: var(--danger-soft); color: var(--danger); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+  .server { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted); word-break: break-all; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#2f6f4f"/><path d="M7 14c2.5-6 7-7 10-7-1 4-3 9-9 9" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+    NutriFlow AI
+  </div>
+
+  <div class="card" id="offline" hidden>
+    <h1>Can't reach NutriFlow</h1>
+    <p>The NutriFlow server isn't responding right now. Check your internet connection and try again in a moment.</p>
+    <div class="server" id="offline-server"></div>
+    <div class="row">
+      <button class="primary" id="retry">Try again</button>
+      <button id="change">Change server address</button>
+    </div>
+  </div>
+
+  <form class="card" id="setup" hidden>
+    <h1>Connect to NutriFlow</h1>
+    <p>Enter the NutriFlow address you were given (it starts with https://).</p>
+    <label for="url">Server address</label>
+    <input id="url" type="url" placeholder="https://…" autocomplete="off" required />
+    <div class="error" id="error" role="alert"></div>
+    <div class="row">
+      <button class="primary" type="submit">Connect</button>
+      <button type="button" id="cancel" hidden>Cancel</button>
+    </div>
+  </form>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  const server = q.get("server") || "";
+  const $ = (id) => document.getElementById(id);
+
+  function show(mode) {
+    $("offline").hidden = mode !== "offline";
+    $("setup").hidden = mode !== "setup";
+    if (mode === "setup") { $("url").value = server; $("cancel").hidden = !server; $("url").focus(); }
+  }
+
+  $("offline-server").textContent = server;
+  $("retry").onclick = () => window.nutriflow.retry();
+  $("change").onclick = () => show("setup");
+  $("cancel").onclick = () => window.nutriflow.retry();
+  $("setup").onsubmit = async (e) => {
+    e.preventDefault();
+    const r = await window.nutriflow.saveServer($("url").value);
+    if (!r.ok) { $("error").textContent = r.error || "That address isn't valid."; $("error").style.display = "block"; }
+  };
+  show(q.get("mode") === "offline" ? "offline" : "setup");
+</script>
+</body>
+</html>

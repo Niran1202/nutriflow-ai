@@ -1,0 +1,12 @@
+# NutriFlow AI — public HTTPS entry point. Caddy obtains and renews the
+# Let's Encrypt certificate automatically. __DOMAIN__ is filled in by setup.sh.
+__DOMAIN__ {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	reverse_proxy 127.0.0.1:3000
+}
