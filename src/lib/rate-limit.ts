@@ -1,6 +1,6 @@
 /**
  * Small in-memory rate limiter for login / invitation attempts. The server is
- * reachable from the internet through a tunnel, so guessing passwords or
+ * reachable from the internet, so guessing passwords or
  * invitation codes must be slowed down. Memory is fine: one server process.
  */
 const buckets = new Map<string, { count: number; resetAt: number }>();
