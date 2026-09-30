@@ -91,7 +91,7 @@ async function list() {
 
 function copyDir(from: string, to: string) {
   fs.rmSync(to, { recursive: true, force: true });
-  fs.cpSync(from, to, { recursive: true });
+  if (fs.existsSync(from)) fs.cpSync(from, to, { recursive: true }); // public/ is optional
 }
 
 async function start() {
