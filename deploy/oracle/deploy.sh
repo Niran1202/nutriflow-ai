@@ -52,5 +52,26 @@ fi
 echo "› Running setup on the server"
 "${SSH[@]}" "sudo bash /opt/nutriflow/app/deploy/oracle/setup.sh '$DOMAIN'"
 
-echo
-echo "✓ NutriFlow AI is live at https://$DOMAIN"
+echo "› Checking https://$DOMAIN (the first certificate can take a minute)"
+for i in $(seq 1 24); do
+  code=$(curl -s -o /dev/null -w "%{http_code}" -m 10 "https://$DOMAIN/login" || true)
+  [ "$code" = 200 ] && break
+  sleep 5
+done
+if [ "$code" != 200 ]; then
+  echo "✗ https://$DOMAIN isn't answering yet (last status: ${code:-none})."
+  echo "  Check that the VM's security list allows TCP 80 and 443, then:"
+  echo "  bash deploy/oracle/manage.sh $IP status"
+  exit 1
+fi
+
+cat <<EOF
+
+✓ NutriFlow AI is live at https://$DOMAIN
+
+Next steps:
+  • Create a dietitian login:
+      bash deploy/oracle/manage.sh $IP dietitian --name "Full Name" --email someone@example.com
+  • Build the desktop app for this server:
+      cd desktop && npm install && npm run dist -- --server https://$DOMAIN
+EOF
