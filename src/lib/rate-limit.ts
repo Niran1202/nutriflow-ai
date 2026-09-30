@@ -1,6 +1,6 @@
 /**
  * Small in-memory rate limiter for login / invitation attempts. The server is
- * reachable from the internet through a tunnel, so guessing passwords or
+ * reachable from the internet, so guessing passwords or
  * invitation codes must be slowed down. Memory is fine: one server process.
  */
 const buckets = new Map<string, { count: number; resetAt: number }>();
@@ -8,10 +8,10 @@ const buckets = new Map<string, { count: number; resetAt: number }>();
 /**
  * The visitor's IP, read only from the header our own proxy sets — any other
  * forwarding header could be forged by the client to dodge the limits.
- *  - Cloudflare tunnel (default): cf-connecting-ip
- *  - Oracle Cloud behind Caddy: x-forwarded-for (Caddy overwrites it)
+ * On the Oracle VM, Caddy overwrites X-Forwarded-For with the real client IP.
+ * Set NUTRIFLOW_CLIENT_IP_HEADER if you put a different proxy in front.
  */
-const IP_HEADER = (process.env.NUTRIFLOW_CLIENT_IP_HEADER ?? "cf-connecting-ip").toLowerCase();
+const IP_HEADER = (process.env.NUTRIFLOW_CLIENT_IP_HEADER ?? "x-forwarded-for").toLowerCase();
 
 export function clientIp(req: Request): string {
   return req.headers.get(IP_HEADER)?.split(",")[0].trim() || "local";

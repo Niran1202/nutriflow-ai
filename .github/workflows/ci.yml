@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    env:
+      # prisma generate (postinstall) reads this; no database is needed in CI.
+      DATABASE_URL: file:./ci.db
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  deploy-scripts:
+    name: Deploy and desktop scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Shell syntax (Oracle deploy scripts)
+        run: for f in deploy/oracle/*.sh; do bash -n "$f" && echo "ok $f"; done
+      - name: ShellCheck
+        run: shellcheck --severity=warning deploy/oracle/*.sh
+      - name: Desktop app syntax
+        run: for f in desktop/*.js desktop/scripts/*.js; do node --check "$f" && echo "ok $f"; done

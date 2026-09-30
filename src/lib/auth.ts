@@ -29,7 +29,7 @@ export async function createSession(userId: string) {
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
   await prisma.session.create({ data: { id: token, userId, expiresAt } });
   const jar = await cookies();
-  // Behind the HTTPS tunnel the cookie must be Secure; plain localhost stays usable.
+  // Behind Caddy (HTTPS) the cookie must be Secure; plain localhost dev stays usable.
   const secure = (await headers()).get("x-forwarded-proto") === "https";
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,

@@ -51,10 +51,12 @@ next-env.d.ts
 /desktop/server
 /desktop/release
 
-# live server data and downloaded tools
+# live server data (lives on the Oracle VM)
 /server-data
-/tools
 
 # desktop app share folder
 /download
 /desktop/app-config.json
+
+# database backups downloaded from the server (contain patient data)
+/backups
