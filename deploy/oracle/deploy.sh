@@ -53,7 +53,7 @@ echo "› Running setup on the server"
 "${SSH[@]}" "sudo bash /opt/nutriflow/app/deploy/oracle/setup.sh '$DOMAIN'"
 
 echo "› Checking https://$DOMAIN (the first certificate can take a minute)"
-for i in $(seq 1 24); do
+for _ in $(seq 1 24); do
   code=$(curl -s -o /dev/null -w "%{http_code}" -m 10 "https://$DOMAIN/login" || true)
   [ "$code" = 200 ] && break
   sleep 5

@@ -28,7 +28,7 @@ if ! command -v ollama >/dev/null; then
   curl -fsSL https://ollama.com/install.sh | sh
 fi
 systemctl enable --now ollama
-for i in $(seq 1 30); do curl -sf http://127.0.0.1:11434/api/version >/dev/null && break; sleep 1; done
+for _ in $(seq 1 30); do curl -sf http://127.0.0.1:11434/api/version >/dev/null && break; sleep 1; done
 ollama pull "$MODEL"
 
 log "Firewall: allow 80/443 (Oracle Ubuntu images block them by default)"
@@ -72,7 +72,7 @@ cp "$APP_DIR/deploy/oracle/nutriflow.service" /etc/systemd/system/nutriflow.serv
 systemctl daemon-reload
 systemctl enable nutriflow
 systemctl restart nutriflow
-for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3000/login && break; sleep 1; done
+for _ in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:3000/login && break; sleep 1; done
 systemctl --no-pager --lines=5 status nutriflow || true
 
 log "Done → https://$DOMAIN"
