@@ -88,7 +88,7 @@ bash deploy/oracle/manage.sh <ip> backup     # consistent snapshot → ./backups
 
 ## Performance
 
-The Ampere VM has no GPU, so Llama 3.2 3B runs on 4 ARM cores: chat replies take roughly 15–25 s and meal parsing 8–12 s (a GTX 1650 does 5–9 s). Everything else in the app is unaffected, and if the model is unavailable the agents fall back to deterministic replies.
+The Ampere VM has no GPU, so Llama 3.2 3B runs on 4 ARM cores. Expect chat replies of very roughly 15–25 s and meal parsing of 8–12 s — these are estimates, so time a few chat replies once deployed (for comparison, a GTX 1650 measured 5–9 s and ~4 s). Everything else in the app is unaffected, and if the model is unavailable the agents fall back to deterministic replies.
 
 ## Security notes
 
