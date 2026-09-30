@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "next typegen && tsc --noEmit",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
