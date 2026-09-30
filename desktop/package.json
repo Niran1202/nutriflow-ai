@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "set-server": "node scripts/set-server.js",
-    "dist": "node scripts/set-server.js && electron-builder --win nsis portable && node scripts/collect.js"
+    "dist": "node scripts/dist.js"
   },
   "devDependencies": {
     "electron": "^44.4.5",
